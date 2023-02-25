@@ -1,7 +1,7 @@
 defmodule RealDealApiWeb.AccountController do
   use RealDealApiWeb, :controller
 
-  alias RealDealApiWeb.{Auth.Guardian}
+  alias RealDealApiWeb.{Auth.Guardian, Auth.ErrorResponse}
   alias RealDealApi.{Accounts, Accounts.Account, Users.User, Users}
 
   action_fallback RealDealApiWeb.FallbackController
@@ -39,6 +39,19 @@ defmodule RealDealApiWeb.AccountController do
 
     with {:ok, %Account{}} <- Accounts.delete_account(account) do
       send_resp(conn, :no_content, "")
+    end
+  end
+
+  def login(conn, %{"email" => email, "password" => password}) do
+    case Guardian.authenticate(email, password) do
+      {:error, :unauthorized} ->
+        raise ErrorResponse.Unauthorized, message: "Invalid email or password"
+
+      {:ok, account, token} ->
+        conn
+        |> Plug.Conn.put_session(:account_id, account.id)
+        |> put_status(:ok)
+        |> render("account_token.json", %{account: account, token: token})
     end
   end
 end

@@ -28,9 +28,12 @@ defmodule RealDealApiWeb.Auth.Guardian do
         {:error, :unauthorized}
 
       account ->
-        case validate_password(password, account.hashed_password) do
-          true -> create_token(account)
-          false -> {:error, :unauthorized}
+        case validate_password(password, account.hashed_pass) do
+          true ->
+            create_token(account)
+
+          false ->
+            {:error, :unauthorized}
         end
     end
   end
