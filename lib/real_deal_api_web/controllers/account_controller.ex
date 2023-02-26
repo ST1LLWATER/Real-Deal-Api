@@ -4,7 +4,27 @@ defmodule RealDealApiWeb.AccountController do
   alias RealDealApiWeb.{Auth.Guardian, Auth.ErrorResponse}
   alias RealDealApi.{Accounts, Accounts.Account, Users.User, Users}
 
+  plug :is_authorized when action in [:update, :delete]
+
   action_fallback RealDealApiWeb.FallbackController
+
+  defp is_authorized(conn, _opts) do
+    try do
+      %{params: %{"id" => id}} = conn
+
+      if conn.assigns.account.id != id, do: raise(ErrorResponse.Forbidden)
+
+      case Accounts.get_account(id) do
+        %Account{} ->
+          conn
+
+        _ ->
+          raise(ErrorResponse.NotFound, message: "Account not found")
+      end
+    catch
+      err -> dbg(err)
+    end
+  end
 
   def index(conn, _params) do
     accounts = Accounts.list_accounts()
@@ -21,16 +41,18 @@ defmodule RealDealApiWeb.AccountController do
     end
   end
 
-  def show(conn, %{"id" => id}) do
-    account = Accounts.get_account!(id)
+  def show(conn, %{"id" => _id}) do
+    # account = Accounts.get_account!(id)
+    account = conn.assigns.account
     render(conn, "show.json", account: account)
   end
 
-  def update(conn, %{"id" => id, "account" => account_params}) do
+  # def update(%{"query_params" => %{"id" => id}, "body_params" => body_params} = conn, _params) do
+  def update(conn, %{"id" => id} = params) do
     account = Accounts.get_account!(id)
 
-    with {:ok, %Account{} = account} <- Accounts.update_account(account, account_params) do
-      render(conn, "show.json", account: account)
+    with {:ok, %Account{}} <- Accounts.update_account(account, params) do
+      json(conn, %{success: true, message: "Account updated successfully"})
     end
   end
 

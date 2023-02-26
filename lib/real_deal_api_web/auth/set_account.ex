@@ -6,7 +6,7 @@ defmodule RealDealApiWeb.Auth.SetAccount do
   def init(_options) do
   end
 
-  def call(%{assign: %{"account_id" => _account_id}} = conn, _options) do
+  def call(%{assigns: assigns} = conn, _options) when is_map_key(assigns, :account) do
     conn
   end
 
